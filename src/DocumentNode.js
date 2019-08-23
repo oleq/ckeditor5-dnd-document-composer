@@ -38,6 +38,33 @@ import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
 import PasteFromOffice from '@ckeditor/ckeditor5-paste-from-office/src/pastefromoffice';
 import Table from '@ckeditor/ckeditor5-table/src/table';
 import TableToolbar from '@ckeditor/ckeditor5-table/src/tabletoolbar';
+import Comments from '@ckeditor/ckeditor5-comments/src/comments';
+import TrackChanges from '@ckeditor/ckeditor5-track-changes/src/trackchanges';
+import { collaborationData } from './PublicComponents';
+
+class CommentsIntegration {
+	constructor( editor ) {
+		this.editor = editor;
+	}
+
+	init() {
+		const usersPlugin = this.editor.plugins.get( 'Users' );
+		const commentsPlugin = this.editor.plugins.get( 'Comments' );
+
+		// Load the users data.
+		for ( const user of collaborationData.users ) {
+			usersPlugin.addUser( user );
+		}
+
+		// Set the current user.
+		usersPlugin.defineMe( collaborationData.userId );
+
+		// Load the comment threads data.
+		for ( const commentThread of collaborationData.commentThreads ) {
+			commentsPlugin.addCommentThread( commentThread );
+		}
+	}
+}
 
 const editorConfiguration = {
 	plugins: [
@@ -61,7 +88,10 @@ const editorConfiguration = {
 		Paragraph,
 		PasteFromOffice,
 		Table,
-		TableToolbar
+		TableToolbar,
+		Comments,
+		CommentsIntegration,
+		TrackChanges
 	],
 	toolbar: {
 		items: [
@@ -77,7 +107,10 @@ const editorConfiguration = {
 			'insertTable',
 			'mediaEmbed',
 			'undo',
-			'redo'
+			'redo',
+			'|',
+			'comment',
+			'trackChanges'
 		],
 		viewportTopOffset: 62
 	},
@@ -96,7 +129,8 @@ const editorConfiguration = {
 			'mergeTableCells'
 		]
 	},
-	placeholder: 'Type content here'
+	placeholder: 'Type content here',
+	licenseKey: 'your-license-key'
 };
 
 const useStyles = makeStyles( theme => ( {
@@ -150,7 +184,7 @@ const useStyles = makeStyles( theme => ( {
 	}
 } ) );
 
-const DocumentNode = ( { id, draggableId, index, title, content, isPublic, deleteNode, addNode, saveNode } ) => {
+const DocumentNode = ( { id, draggableId, index, title, content, isLayoutReady, sidebarElementRef, isPublic, deleteNode, addNode, saveNode } ) => {
 	const [ isEdited, setIsEdited ] = useState( !isPublic );
 	let editorInstance;
 
@@ -205,15 +239,27 @@ const DocumentNode = ( { id, draggableId, index, title, content, isPublic, delet
 						(
 							<Box>
 								<Typography component="div">
-									<CKEditor
-										editor={InlineEditor}
-										config={editorConfiguration}
-										data={content}
-										onInit={ editor => {
-											editorInstance = editor;
-											editor.editing.view.focus();
-										} }
-									/>
+									{ isLayoutReady && (
+										<CKEditor
+											editor={InlineEditor}
+											config={ Object.assign( {},
+												editorConfiguration,
+												{
+													sidebar: {
+														container: sidebarElementRef.current
+													}
+												} )
+											}
+											data={content}
+											onInit={ editor => {
+												editorInstance = editor;
+
+												if ( isPublic ) {
+													editor.editing.view.focus();
+												}
+											} }
+										/>
+									) }
 								</Typography>
 								{ isPublic ? (
 									<Toolbar className={classes.editingToolbar}>

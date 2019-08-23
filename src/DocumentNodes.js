@@ -17,7 +17,7 @@ const useStyles = makeStyles( theme => ( {
 	}
 } ) );
 
-const DocumentNodes = ( { documentNodes, isDropDisabled, deleteNode, addNode, saveNode } ) => {
+const DocumentNodes = ( { documentNodes, sidebarElementRef, isLayoutReady, isDropDisabled, deleteNode, addNode, saveNode } ) => {
 	const [ isDraggingOver, setIsDraggingOver ] = useState( false );
 	const classes = useStyles( { isDraggingOver } );
 
@@ -43,6 +43,8 @@ const DocumentNodes = ( { documentNodes, isDropDisabled, deleteNode, addNode, sa
 									isPublic={componentData.isPublic}
 									index={index}
 									title={componentData.title}
+									sidebarElementRef={sidebarElementRef}
+									isLayoutReady={isLayoutReady}
 									content={componentData.content}
 									deleteNode={deleteNode}
 									addNode={addNode}

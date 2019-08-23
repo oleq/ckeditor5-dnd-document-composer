@@ -3,14 +3,17 @@ import Box from '@material-ui/core/Box';
 import Divider from '@material-ui/core/Divider';
 import DocumentNodes from './DocumentNodes';
 import Drawer from '@material-ui/core/Drawer';
-import publicComponents from './PublicComponents';
-import React, { useState } from 'react';
+import { publicComponents } from './PublicComponents';
+import React, { useState, useRef, useEffect } from 'react';
 import ReusableComponents from './ReusableComponents';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import Toc from './Toc';
 import Toolbar from '@material-ui/core/Toolbar';
 import Typography from '@material-ui/core/Typography';
+import WidgetsIcon from '@material-ui/icons/Widgets';
+import FormatListBulletedIcon from '@material-ui/icons/FormatListBulleted';
+import HistoryIcon from '@material-ui/icons/History';
 import { uid } from './utils';
 import { makeStyles } from '@material-ui/core/styles';
 import { DragDropContext } from 'react-beautiful-dnd';
@@ -49,6 +52,17 @@ const useStyles = makeStyles( theme => ( {
 		width: '100%',
 		maxWidth: 960,
 		borderBottom: '1px solid #eee'
+	},
+	sidebar: {
+		width: 320,
+		flexShrink: 0,
+		padding: 0
+	},
+	sidebarContent: {
+		position: 'relative',
+		padding: theme.spacing( 2, 2 ),
+		background: theme.palette.grey[ 100 ],
+		height: '100%'
 	}
 } ) );
 
@@ -71,7 +85,9 @@ function TabPanel( props ) {
 
 export default function App() {
 	const classes = useStyles();
+	const sidebarElementRef = useRef();
 	const [ activeTab, setActiveTab ] = useState( 0 );
+	const [ isLayoutReady, setIsLayoutReady ] = useState( false );
 	const [ disableDropInDocumentNodes, setDisableDropInDocumentNodes ] = useState( false );
 	const [ documentNodes, setDocumentNodes ] = useState( [
 		{
@@ -88,6 +104,10 @@ export default function App() {
 		publicComponents[ 0 ],
 		publicComponents[ 3 ],
 	] );
+
+	useEffect( () => {
+		setIsLayoutReady( true );
+	}, [] );
 
 	function handleActiveTabChange( event, newValue ) {
 		setActiveTab( newValue );
@@ -180,8 +200,8 @@ export default function App() {
 					<Typography variant="h6" color="inherit">Document editor</Typography>
 				</Toolbar>
 			</AppBar>
-			<Box display="flex" height="100%" flexDirection="row" className={classes.root} >
-				{/* Left column with TOC */}
+			<Box display="flex" height="100%" flexDirection="row" alignItems="stretch" className={classes.root} >
+				{/* Left column with reusable components */}
 				<Drawer
 					className={classes.drawer}
 					variant="persistent"
@@ -191,12 +211,26 @@ export default function App() {
 				>
 					<div className={classes.drawerHeader} />
 					<Divider />
-					<Box p={2}>
-						<Typography variant="h6" component="h3" noWrap>
-							Table of contents
-						</Typography>
+					<AppBar position="static" color="default">
+						<Tabs
+							value={activeTab}
+							onChange={handleActiveTabChange}
+							variant="fullWidth"
+						>
+							<Tab icon={<WidgetsIcon />} className={classes.tab} />
+							<Tab icon={<FormatListBulletedIcon />} className={classes.tab} />
+							<Tab icon={<HistoryIcon />} className={classes.tab} />
+						</Tabs>
+					</AppBar>
+					<TabPanel value={activeTab} index={0}>
+						<ReusableComponents reusableComponents={publicComponents} />
+					</TabPanel>
+					<TabPanel value={activeTab} index={1}>
 						<Toc documentNodes={documentNodes} />
-					</Box>
+					</TabPanel>
+					<TabPanel value={activeTab} index={2}>
+						TODO
+					</TabPanel>
 				</Drawer>
 
 				{/* Middle column with the document */}
@@ -212,6 +246,8 @@ export default function App() {
 						<DocumentNodes
 							documentNodes={documentNodes}
 							isDropDisabled={disableDropInDocumentNodes}
+							sidebarElementRef={sidebarElementRef}
+							isLayoutReady={isLayoutReady}
 							deleteNode={deleteNode}
 							addNode={addNode}
 							saveNode={saveNode}
@@ -219,33 +255,16 @@ export default function App() {
 					</Box>
 				</Box>
 
-				{/* Right column with reusable components */}
-				<Drawer
-					className={classes.drawer}
-					variant="persistent"
-					anchor="right"
-					open={true}
-					classes={{ paper: classes.drawerPaper }}
+				{/* Right column with comments and changes */}
+				<Box
+					className={classes.sidebar}
 				>
-					<div className={classes.drawerHeader} />
-					<Divider />
-					<AppBar position="static" color="default">
-						<Tabs
-							value={activeTab}
-							onChange={handleActiveTabChange}
-							variant="fullWidth"
-						>
-							<Tab label="Components" className={classes.tab} />
-							<Tab label="History" className={classes.tab} />
-						</Tabs>
-					</AppBar>
-					<TabPanel value={activeTab} index={0}>
-						<ReusableComponents reusableComponents={publicComponents} />
-					</TabPanel>
-					<TabPanel value={activeTab} index={1}>
-						TODO
-					</TabPanel>
-				</Drawer>
+					<Typography
+						ref={sidebarElementRef}
+						className={classes.sidebarContent}
+						component="div">
+					</Typography>
+				</Box>
 			</Box>
 		</DragDropContext>
 	);
